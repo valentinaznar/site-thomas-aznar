@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="/style.css">
-<script src="/config.js"></script>
+<link rel="stylesheet" href="../style.css">
+<script src="../config.js"></script>
 <style>
 .shell{max-width:1100px;margin:0 auto;padding:40px 32px 120px;display:flex;flex-direction:column;gap:28px}
 .bar{position:sticky;top:0;z-index:20;background:rgba(14,14,13,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
@@ -57,13 +57,13 @@
       <span class="status" id="pubState" role="status" aria-live="polite">Tout est publié.</span>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:10px">
-      <a class="btn" href="/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;text-decoration:none">Voir le site</a>
+      <a class="btn" href="../" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;text-decoration:none">Voir le site</a>
       <button class="btn" type="button" id="logout">Se déconnecter</button>
       <button class="btn primary" type="button" id="publish" disabled>Publier</button>
     </div>
   </div></div>
   <div class="shell">
-    <p class="note" style="margin:0">Faites toutes vos modifications, puis cliquez sur <strong>Publier</strong> une seule fois. Le site se met à jour dans les minutes qui suivent, sans nouvelle mise en ligne sur Netlify.</p>
+    <p class="note" style="margin:0">Faites toutes vos modifications, puis cliquez sur <strong>Publier</strong> une seule fois. Le site se met à jour dans les minutes qui suivent.</p>
     <div class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" data-tab="films" aria-selected="true">Films</button>
       <button role="tab" data-tab="profil" aria-selected="false">Profil &amp; réseaux</button>
@@ -298,7 +298,7 @@
       '<label class="f">Titre<input class="inp" name="titre" value="'+esc(c.titre)+'"></label>'+
       '<label class="f">Texte avant le formulaire (une ligne vide entre deux paragraphes)<textarea class="inp" name="texte" rows="7">'+esc(c.texte)+'</textarea></label>'+
       '<label class="check"><input type="checkbox" name="afficherEmail"'+(c.afficherEmail?' checked':'')+'> Afficher aussi l\'adresse e-mail sous le texte</label>'+
-      '<p class="note" style="margin:0">L\'adresse e-mail et les liens des réseaux se modifient dans « Profil &amp; réseaux ». Les messages du formulaire arrivent par e-mail via Netlify.</p></form>';
+      '<p class="note" style="margin:0">L\'adresse e-mail et les liens des réseaux se modifient dans « Profil &amp; réseaux ». Les messages du formulaire arrivent par e-mail via Formspree.</p></form>';
     $("ed").addEventListener("input", function(e){ if(e.target.name && e.target.type!=="checkbox"){ c[e.target.name]=e.target.value; markDirty(); } });
     $("ed").addEventListener("change", function(e){ if(e.target.name==="afficherEmail"){ c.afficherEmail=e.target.checked; markDirty(); } });
     $("ed").addEventListener("submit", function(e){ e.preventDefault(); });

@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="/style.css">
-<script src="/config.js"></script>
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -65,10 +65,9 @@
           <p id="mailLine" class="hidden" style="margin:0;font-size:15px;color:var(--muted)">Ou directement par e-mail : <a id="mail" href="#"></a></p>
           <div class="socials" id="socials"></div>
         </div>
-        <!-- Formulaire géré par Netlify Forms -->
-        <form name="contact" method="POST" action="/" data-netlify="true" netlify-honeypot="bot-field" id="contactForm" style="flex:1.3 1 360px;display:flex;flex-direction:column;gap:18px;align-self:flex-start">
-          <input type="hidden" name="form-name" value="contact">
-          <p class="hp"><label>Ne pas remplir <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
+        <!-- Formulaire envoyé via Formspree (adresse dans config.js) -->
+        <form name="contact" method="POST" id="contactForm" style="flex:1.3 1 360px;display:flex;flex-direction:column;gap:18px;align-self:flex-start">
+          <p class="hp"><label>Ne pas remplir <input name="_gotcha" tabindex="-1" autocomplete="off"></label></p>
           <div class="grid2">
             <label class="f">Nom<input class="inp" name="nom" autocomplete="name" required></label>
             <label class="f">E-mail<input class="inp" type="email" name="email" autocomplete="email" required></label>
@@ -106,7 +105,7 @@
   function asset(p){
     p = String(p||"").trim(); if (!p) return "";
     if (/^https:\/\//i.test(p)) return p;
-    if (/^(images\/)[\w\-./]+$/.test(p)) return (rawBase() || "/") + p;
+    if (/^(images\/)[\w\-./]+$/.test(p)) return (rawBase() || "") + p;
     return "";
   }
   function link(u){ u=String(u||"").trim(); return /^https?:\/\//i.test(u) ? u : ""; }
@@ -222,8 +221,9 @@
     e.preventDefault();
     var form=e.target, st=$("contactStatus");
     if (!form.checkValidity()){ form.reportValidity(); return; }
+    if (!CFG.formulaire){ st.className="status err"; st.textContent="Le formulaire n'est pas encore relié (adresse Formspree manquante dans config.js)."; return; }
     $("sendBtn").disabled=true; st.className="status"; st.textContent="Envoi…";
-    fetch("/", { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:new URLSearchParams(new FormData(form)).toString() })
+    fetch(CFG.formulaire, { method:"POST", headers:{"Accept":"application/json"}, body:new FormData(form) })
       .then(function(r){ if(!r.ok) throw new Error(r.status); form.reset(); st.textContent="Merci, votre message a bien été envoyé."; })
       .catch(function(){ st.className="status err"; st.textContent="L'envoi n'a pas fonctionné. Réessayez dans un instant."; })
       .then(function(){ $("sendBtn").disabled=false; });
@@ -233,7 +233,7 @@
   function load(){
     var base=rawBase();
     var first = base ? fetch(base+"contenu.json?t="+Date.now(), {cache:"no-store"}).then(function(r){ if(!r.ok) throw 0; return r.json(); }) : Promise.reject();
-    return first.catch(function(){ return fetch("/contenu.json", {cache:"no-cache"}).then(function(r){ if(!r.ok) throw 0; return r.json(); }); });
+    return first.catch(function(){ return fetch("contenu.json", {cache:"no-cache"}).then(function(r){ if(!r.ok) throw 0; return r.json(); }); });
   }
   route();
   load().then(function(data){
