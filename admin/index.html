@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Back-office — site de Thomas Aznar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/style.css">
+<script src="/config.js"></script>
+<style>
+.shell{max-width:1100px;margin:0 auto;padding:40px 32px 120px;display:flex;flex-direction:column;gap:28px}
+.bar{position:sticky;top:0;z-index:20;background:rgba(14,14,13,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar-in{max-width:1100px;margin:0 auto;padding:14px 32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.dirty{color:var(--gold)}
+.login{max-width:520px;margin:80px auto;padding:0 24px;display:flex;flex-direction:column;gap:20px}
+.help{font-size:14px;color:var(--muted);line-height:1.65}
+.help ol{padding-left:20px;margin:8px 0}
+@media (max-width:640px){.shell{padding:24px 16px 100px}.bar-in{padding:12px 16px}}
+</style>
+</head>
+<body>
+
+<!-- Connexion -->
+<div id="loginView" class="login hidden">
+  <h1 class="serif" style="margin:0;font-size:44px;line-height:1">Back-office</h1>
+  <p class="help" style="margin:0">Pour modifier le site, collez votre clé d'accès GitHub. Elle reste enregistrée dans ce navigateur uniquement.</p>
+  <form id="loginForm" style="display:flex;flex-direction:column;gap:16px" novalidate>
+    <div class="grid2" id="repoFields">
+      <label class="f">Compte GitHub<input class="inp" id="lgOwner" autocomplete="off" placeholder="nom-utilisateur"></label>
+      <label class="f">Dépôt<input class="inp" id="lgRepo" autocomplete="off" placeholder="site-thomas-aznar"></label>
+    </div>
+    <label class="f">Clé d'accès GitHub<input class="inp" id="lgToken" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+      <button class="btn primary" type="submit" id="lgBtn">Se connecter</button>
+      <span class="status" id="lgStatus" role="status" aria-live="polite"></span>
+    </div>
+  </form>
+  <details class="help">
+    <summary style="cursor:pointer;color:var(--ink)">Comment obtenir une clé d'accès ?</summary>
+    <ol>
+      <li>Sur GitHub : photo de profil → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.</li>
+      <li>Repository access : « Only select repositories », puis choisir le dépôt du site.</li>
+      <li>Permissions → Repository permissions → Contents : « Read and write ».</li>
+      <li>Générer, copier la clé et la coller ici.</li>
+    </ol>
+  </details>
+</div>
+
+<!-- Back-office -->
+<div id="appView" class="hidden">
+  <div class="bar"><div class="bar-in">
+    <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+      <span class="serif" style="font-size:26px">Back-office</span>
+      <span class="status" id="pubState" role="status" aria-live="polite">Tout est publié.</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      <a class="btn" href="/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;text-decoration:none">Voir le site</a>
+      <button class="btn" type="button" id="logout">Se déconnecter</button>
+      <button class="btn primary" type="button" id="publish" disabled>Publier</button>
+    </div>
+  </div></div>
+  <div class="shell">
+    <p class="note" style="margin:0">Faites toutes vos modifications, puis cliquez sur <strong>Publier</strong> une seule fois. Le site se met à jour dans les minutes qui suivent, sans nouvelle mise en ligne sur Netlify.</p>
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" data-tab="films" aria-selected="true">Films</button>
+      <button role="tab" data-tab="profil" aria-selected="false">Profil &amp; réseaux</button>
+      <button role="tab" data-tab="prix" aria-selected="false">Prix &amp; sélections</button>
+      <button role="tab" data-tab="parcours" aria-selected="false">Parcours</button>
+      <button role="tab" data-tab="contact" aria-selected="false">Page contact</button>
+    </div>
+    <div id="panel" role="tabpanel"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script>
+(function(){
+  "use strict";
+  var CATS = { court:"Court métrage", clip:"Clip", doc:"Documentaire", pub:"Publicité", autre:"Autre" };
+  var CFG = window.SITE_CONFIG || {};
+  var LS = { get:function(k){ try{ return localStorage.getItem(k)||""; }catch(e){ return ""; } }, set:function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }, del:function(k){ try{ localStorage.removeItem(k); }catch(e){} } };
+  var A = { owner: CFG.owner || LS.get("ta_owner"), repo: CFG.repo || LS.get("ta_repo"), branch: CFG.branch || "main", token: LS.get("ta_token") };
+  var D = null, sha = null, dirty = false, tab = "films", editing = null, localPrev = {};
+
+  function $(id){ return document.getElementById(id); }
+  function esc(v){ return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function toast(m){ var t=$("toast"); t.textContent=m; t.classList.remove("hidden"); clearTimeout(toast.t); toast.t=setTimeout(function(){ t.classList.add("hidden"); },2800); }
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function slug(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || "element"; }
+  function uid(base, list){ var id=slug(base), n=2, ids=list.map(function(x){ return x.id; }); var out=id; while(ids.indexOf(out)>=0){ out=id+"-"+(n++); } return out; }
+  function imgUrl(p){ p=String(p||""); if(!p) return ""; if(localPrev[p]) return localPrev[p]; if(/^https:\/\//.test(p)) return p; if(/^images\//.test(p)) return "https://raw.githubusercontent.com/"+A.owner+"/"+A.repo+"/"+A.branch+"/"+p; return ""; }
+
+  /* ---------- GitHub ---------- */
+  function gh(path, opts){
+    opts = opts || {};
+    var h = { "Accept":"application/vnd.github+json", "Authorization":"Bearer "+A.token, "X-GitHub-Api-Version":"2022-11-28" };
+    if (opts.body) h["Content-Type"]="application/json";
+    return fetch("https://api.github.com/repos/"+A.owner+"/"+A.repo+path, { method:opts.method||"GET", headers:h, body:opts.body?JSON.stringify(opts.body):undefined, cache:"no-store" })
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ if(!r.ok){ var e=new Error(j.message||("Erreur "+r.status)); e.status=r.status; throw e; } return j; }); });
+  }
+  function b64utf8(str){ var bytes=new TextEncoder().encode(str), bin=""; for(var i=0;i<bytes.length;i+=0x8000){ bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000)); } return btoa(bin); }
+  function utf8b64(b64){ var bin=atob(b64.replace(/\n/g,"")), bytes=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
+  function errText(e){ if(e.status===401) return "Clé d'accès refusée (expirée ou incorrecte)."; if(e.status===404) return "Dépôt introuvable, ou la clé n'y a pas accès."; if(e.status===403) return "La clé n'a pas le droit d'écrire (Contents : Read and write)."; if(e.status===409) return "Le contenu a changé entre-temps : rechargez la page."; return e.message || "Erreur réseau."; }
+
+  function loadContent(){
+    return gh("/contents/contenu.json?ref="+encodeURIComponent(A.branch)).then(function(j){
+      sha=j.sha; D=JSON.parse(utf8b64(j.content));
+      ["films","prix","parcours"].forEach(function(k){ D[k]=D[k]||[]; }); D.profil=D.profil||{}; D.contact=D.contact||{};
+    });
+  }
+  function publish(){
+    $("publish").disabled=true; setState("Publication…");
+    gh("/contents/contenu.json", { method:"PUT", body:{ message:"Mise à jour du contenu [skip netlify]", content:b64utf8(JSON.stringify(D,null,2)+"\n"), sha:sha, branch:A.branch } })
+      .then(function(j){ sha=j.content.sha; dirty=false; setState(); toast("Publié. Le site sera à jour d'ici quelques minutes."); })
+      .catch(function(e){ setState(); $("publish").disabled=false; toast("Échec de la publication : "+errText(e)); });
+  }
+  // Images : redimensionnées dans le navigateur puis envoyées dans images/uploads (sans remise en ligne Netlify)
+  function shrink(file){
+    return new Promise(function(res){
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return res({ blob:file, ext:(file.name.split(".").pop()||"img").toLowerCase() });
+      var img=new Image(), u=URL.createObjectURL(file);
+      img.onload=function(){
+        var max=2000, w=img.naturalWidth, h=img.naturalHeight, k=Math.min(1, max/Math.max(w,h));
+        var c=document.createElement("canvas"); c.width=Math.round(w*k); c.height=Math.round(h*k);
+        c.getContext("2d").drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(u);
+        var png = file.type==="image/png";
+        c.toBlob(function(b){ res({ blob:b||file, ext: png?"png":"jpg" }); }, png?"image/png":"image/jpeg", 0.86);
+      };
+      img.onerror=function(){ URL.revokeObjectURL(u); res({ blob:file, ext:(file.name.split(".").pop()||"img").toLowerCase() }); };
+      img.src=u;
+    });
+  }
+  function uploadImage(file, statusEl, done){
+    if (!file) return;
+    if (file.size > 15*1024*1024){ statusEl.className="status err"; statusEl.textContent="Image trop lourde (15 Mo maximum)."; return; }
+    statusEl.className="status"; statusEl.textContent="Envoi de l'image…";
+    shrink(file).then(function(r){
+      return new Promise(function(ok){ var fr=new FileReader(); fr.onload=function(){ ok({ data:String(fr.result).split(",")[1], ext:r.ext, blob:r.blob }); }; fr.readAsDataURL(r.blob); });
+    }).then(function(r){
+      var path="images/uploads/"+Date.now()+"-"+slug(file.name.replace(/\.[^.]+$/,""))+"."+r.ext;
+      return gh("/contents/"+path, { method:"PUT", body:{ message:"Ajout d'une image [skip netlify]", content:r.data, branch:A.branch } }).then(function(){ localPrev[path]=URL.createObjectURL(r.blob); return path; });
+    }).then(function(path){ statusEl.textContent="Image ajoutée. Pensez à publier."; done(path); markDirty(); })
+      .catch(function(e){ statusEl.className="status err"; statusEl.textContent="Échec de l'envoi : "+errText(e); });
+  }
+
+  /* ---------- État ---------- */
+  function setState(msg){ var s=$("pubState"); s.className="status"+(dirty?" dirty":""); s.textContent = msg || (dirty ? "Modifications non publiées." : "Tout est publié."); $("publish").disabled=!dirty; }
+  function markDirty(){ dirty=true; setState(); }
+  window.addEventListener("beforeunload", function(e){ if(dirty){ e.preventDefault(); e.returnValue=""; } });
+
+  /* ---------- Connexion ---------- */
+  function showLogin(msg){
+    $("appView").classList.add("hidden"); $("loginView").classList.remove("hidden");
+    $("repoFields").classList.toggle("hidden", !!(CFG.owner && CFG.repo));
+    $("lgOwner").value=A.owner||""; $("lgRepo").value=A.repo||"";
+    if (msg){ $("lgStatus").className="status err"; $("lgStatus").textContent=msg; }
+  }
+  $("loginForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if (!(CFG.owner && CFG.repo)){ A.owner=$("lgOwner").value.trim(); A.repo=$("lgRepo").value.trim(); }
+    A.token=$("lgToken").value.trim();
+    if (!A.owner || !A.repo || !A.token){ $("lgStatus").className="status err"; $("lgStatus").textContent="Remplissez tous les champs."; return; }
+    $("lgBtn").disabled=true; $("lgStatus").className="status"; $("lgStatus").textContent="Connexion…";
+    start(true).finally(function(){ $("lgBtn").disabled=false; });
+  });
+  $("logout").addEventListener("click", function(){
+    if (dirty && $("logout").dataset.c!=="1"){ $("logout").dataset.c="1"; $("logout").textContent="Non publié : confirmer ?"; return; }
+    LS.del("ta_token"); A.token=""; dirty=false; $("logout").dataset.c=""; $("logout").textContent="Se déconnecter"; $("lgToken").value=""; showLogin();
+  });
+  function start(fromForm){
+    return loadContent().then(function(){
+      if (fromForm){ LS.set("ta_token",A.token); LS.set("ta_owner",A.owner); LS.set("ta_repo",A.repo); }
+      $("loginView").classList.add("hidden"); $("appView").classList.remove("hidden"); setState(); render();
+    }).catch(function(e){ showLogin(errText(e)); });
+  }
+
+  /* ---------- Rendu ---------- */
+  document.querySelector(".tabs").addEventListener("click", function(e){
+    var b=e.target.closest("button[data-tab]"); if(!b) return;
+    if (editing && !confirmLeave()) return;
+    tab=b.dataset.tab; editing=null;
+    document.querySelectorAll(".tabs button").forEach(function(x){ x.setAttribute("aria-selected", x===b?"true":"false"); });
+    render();
+  });
+  function confirmLeave(){ toast("Validez ou annulez d'abord l'élément en cours de modification."); return false; }
+  function render(){
+    if (tab==="films") return editing ? filmEditor() : listView("films");
+    if (tab==="prix" || tab==="parcours") return editing ? itemEditor(tab) : listView(tab);
+    if (tab==="profil") return profilView();
+    if (tab==="contact") return contactView();
+  }
+
+  var LISTS = {
+    films:{ add:"+ Ajouter un film", title:function(x){ return x.titre||"Sans titre"; }, sub:function(x){ return [CATS[x.categorie],x.artiste,x.annee].filter(Boolean).join(" · "); }, thumb:"image", wide:true },
+    prix:{ add:"+ Ajouter un prix ou une sélection", title:function(x){ return [x.distinction,x.titre].filter(Boolean).join(" · ")||"—"; }, sub:function(x){ return [x.annee,x.film,x.detail].filter(Boolean).join(" · "); }, thumb:"logo",
+      fields:[["distinction","Distinction","Lauréat, Sélection officielle…"],["annee","Année","2026"],["titre","Festival ou prix","Filme ton quartier"],["detail","Détail","France 3 · 10ᵉ édition"],["film","Film","L'attente"]] },
+    parcours:{ add:"+ Ajouter une étape", title:function(x){ return x.titre||"—"; }, sub:function(x){ return [x.periode,x.detail].filter(Boolean).join(" · "); }, thumb:"logo",
+      fields:[["periode","Période","2025 – 2026"],["titre","Titre","École W"],["detail","Détail","Formation scénariste"]] }
+  };
+  function listView(k){
+    var cfg=LISTS[k], list=D[k];
+    $("panel").innerHTML='<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px"><span class="note">'+list.length+' élément(s), dans l\'ordre d\'affichage.</span><button class="btn primary" type="button" data-act="new">'+cfg.add+'</button></div>'+
+      '<div class="rows">'+list.map(function(x,i){
+        var t=imgUrl(x[cfg.thumb]);
+        var th = cfg.wide ? '<div class="thumb">'+(t?'<img src="'+esc(t)+'" alt="">':'')+'</div>' : (t?'<div class="thumb" style="width:56px;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center"><img src="'+esc(t)+'" alt="" style="width:auto;height:auto;max-width:90%;max-height:90%;object-fit:contain"></div>':'');
+        return '<div class="row">'+th+'<div class="info"><strong>'+esc(cfg.title(x))+(x.publie===false?'<span class="pill off">Masqué</span>':'')+'</strong><span class="note" style="font-size:13px">'+esc(cfg.sub(x))+'</span></div><div class="actions">'+
+          '<button class="btn small" type="button" data-act="up" data-i="'+i+'" '+(i===0?'disabled':'')+' aria-label="Monter">↑</button>'+
+          '<button class="btn small" type="button" data-act="down" data-i="'+i+'" '+(i===list.length-1?'disabled':'')+' aria-label="Descendre">↓</button>'+
+          '<button class="btn small" type="button" data-act="edit" data-i="'+i+'">Modifier</button>'+
+          '<button class="btn small danger" type="button" data-act="del" data-i="'+i+'">Supprimer</button></div></div>';
+      }).join("")+'</div>';
+  }
+  $("panel").addEventListener("click", function(e){
+    var b=e.target.closest("button[data-act]"); if(!b || editing) return;
+    var k=tab, list=D[k], i=+b.dataset.i, act=b.dataset.act;
+    if (act==="new"){
+      var blank = k==="films" ? {id:"",titre:"",categorie:"clip",annee:"",duree:"",artiste:"",sousTitre:"",synopsis:"",video:"",image:"",mention:"",credits:[{role:"Réalisation",nom:""}],publie:true} : {id:"",logo:""};
+      if (k!=="films") LISTS[k].fields.forEach(function(f){ blank[f[0]]=""; });
+      editing={ index:-1, data:blank }; render(); return;
+    }
+    if (act==="edit"){ var d=clone(list[i]); if(k==="films" && !d.credits) d.credits=[]; editing={ index:i, data:d }; render(); return; }
+    if (act==="up" || act==="down"){ var j=act==="up"?i-1:i+1; var t=list[i]; list[i]=list[j]; list[j]=t; markDirty(); render(); return; }
+    if (act==="del"){
+      if (b.dataset.c!=="1"){ b.dataset.c="1"; b.textContent="Confirmer ?"; setTimeout(function(){ if(b.isConnected){ b.dataset.c=""; b.textContent="Supprimer"; } },4000); return; }
+      list.splice(i,1); markDirty(); render();
+    }
+  });
+  function commitEdit(k){
+    var d=editing.data, list=D[k];
+    if (!d.id) d.id=uid(d.titre||d.periode||"element", list);
+    if (editing.index<0) list.push(d); else list[editing.index]=d;
+    editing=null; markDirty(); render(); toast("Modification prête. Pensez à publier.");
+  }
+  function pickBlock(label, val, tall){
+    var u=imgUrl(val);
+    return '<div style="display:flex;flex-direction:column;gap:10px"><span class="label">'+label+'</span><div class="imgpick"><div class="prev'+(tall?" "+tall:"")+'" id="pPrev">'+(u?'<img src="'+esc(u)+'" alt="">':'')+'</div>'+
+      '<div style="display:flex;flex-direction:column;gap:8px"><label class="btn" style="display:inline-flex;align-items:center;justify-content:center">Choisir une image<input type="file" accept="image/*" id="pFile" class="hidden"></label>'+
+      '<button class="btn small" type="button" id="pRm"'+(val?'':' disabled')+'>Retirer l\'image</button><span class="status" id="pStatus"></span></div></div></div>';
+  }
+  function wirePick(obj, key){
+    $("pFile").addEventListener("change", function(e){ uploadImage(e.target.files[0], $("pStatus"), function(path){ obj[key]=path; $("pPrev").innerHTML='<img src="'+esc(imgUrl(path))+'" alt="">'; $("pRm").disabled=false; }); });
+    $("pRm").addEventListener("click", function(){ obj[key]=""; $("pPrev").innerHTML=""; $("pRm").disabled=true; });
+  }
+  function actions(){ return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px"><button class="btn primary" type="submit">Valider</button><button class="btn" type="button" id="cancelEd">Annuler</button><span class="status" id="edStatus" role="status"></span></div>'; }
+
+  function filmEditor(){
+    var d=editing.data;
+    var cats=Object.keys(CATS).map(function(k){ return '<option value="'+k+'"'+(d.categorie===k?' selected':'')+'>'+CATS[k]+'</option>'; }).join("");
+    function inp(n,l,ph){ return '<label class="f">'+l+'<input class="inp" name="'+n+'" value="'+esc(d[n])+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+'></label>'; }
+    $("panel").innerHTML='<form class="editor" id="ed" novalidate><h3>'+(editing.index<0?'Nouveau film':'Modifier le film')+'</h3>'+
+      '<div class="grid2">'+inp("titre","Titre")+'<label class="f">Catégorie<select class="inp" name="categorie">'+cats+'</select></label>'+inp("annee","Année","2026")+inp("duree","Durée","3 min 33")+inp("artiste","Artiste (pour un clip)")+inp("sousTitre","Ligne sous la vignette","coréalisé avec…")+'</div>'+
+      '<label class="f">Synopsis<textarea class="inp" name="synopsis" rows="4">'+esc(d.synopsis)+'</textarea></label>'+
+      '<div class="grid2">'+inp("video","Lien de la vidéo (YouTube ou Vimeo)","https://…")+inp("mention","Prix ou mention (bandeau doré)","Lauréat · Festival …")+'</div>'+
+      pickBlock("Image d'aperçu (format 16:9)", d.image)+
+      '<div style="display:flex;flex-direction:column;gap:10px"><span class="label">Crédits</span><div id="cr" style="display:flex;flex-direction:column;gap:8px"></div><button class="btn small" type="button" id="addCr" style="align-self:flex-start">+ Ajouter une ligne</button></div>'+
+      '<label class="check"><input type="checkbox" name="publie"'+(d.publie!==false?' checked':'')+'> Afficher sur le site</label>'+actions()+'</form>';
+    function crs(){ $("cr").innerHTML=d.credits.map(function(c,i){ return '<div class="credit-row"><input class="inp" aria-label="Poste" placeholder="Poste (ex. Image)" data-ci="'+i+'" data-k="role" value="'+esc(c.role)+'"><input class="inp" aria-label="Nom" placeholder="Nom" data-ci="'+i+'" data-k="nom" value="'+esc(c.nom)+'"><button class="btn small" type="button" data-rm="'+i+'">Retirer</button></div>'; }).join(""); }
+    crs();
+    var f=$("ed");
+    f.addEventListener("input", function(e){ var t=e.target; if(t.dataset.ci!=null){ d.credits[+t.dataset.ci][t.dataset.k]=t.value; return; } if(t.name && t.type!=="checkbox" && t.type!=="file") d[t.name]=t.value; });
+    f.addEventListener("change", function(e){ if(e.target.name==="publie") d.publie=e.target.checked; if(e.target.name==="categorie") d.categorie=e.target.value; });
+    $("cr").addEventListener("click", function(e){ var b=e.target.closest("[data-rm]"); if(b){ d.credits.splice(+b.dataset.rm,1); crs(); } });
+    $("addCr").addEventListener("click", function(){ d.credits.push({role:"",nom:""}); crs(); });
+    wirePick(d,"image");
+    $("cancelEd").addEventListener("click", function(){ editing=null; render(); });
+    f.addEventListener("submit", function(e){ e.preventDefault(); if(!String(d.titre||"").trim()){ $("edStatus").className="status err"; $("edStatus").textContent="Il faut au moins un titre."; return; }
+      d.credits=d.credits.filter(function(c){ return (c.role||"").trim()||(c.nom||"").trim(); }); commitEdit("films"); });
+  }
+  function itemEditor(k){
+    var cfg=LISTS[k], d=editing.data;
+    $("panel").innerHTML='<form class="editor" id="ed" novalidate><h3>'+(editing.index<0?'Ajouter':'Modifier')+'</h3><div class="grid2">'+
+      cfg.fields.map(function(f){ return '<label class="f">'+f[1]+'<input class="inp" name="'+f[0]+'" value="'+esc(d[f[0]])+'" placeholder="'+esc(f[2])+'"></label>'; }).join("")+'</div>'+
+      pickBlock("Logo (facultatif, de préférence PNG ou SVG à fond transparent)", d.logo, "logo")+actions()+'</form>';
+    $("ed").addEventListener("input", function(e){ if(e.target.name) d[e.target.name]=e.target.value; });
+    wirePick(d,"logo");
+    $("cancelEd").addEventListener("click", function(){ editing=null; render(); });
+    $("ed").addEventListener("submit", function(e){ e.preventDefault(); commitEdit(k); });
+  }
+  function profilView(){
+    var p=D.profil;
+    function inp(n,l,ph){ return '<label class="f">'+l+'<input class="inp" name="'+n+'" value="'+esc(p[n])+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+'></label>'; }
+    $("panel").innerHTML='<form class="editor" id="ed" novalidate><h3>Profil &amp; réseaux</h3><div class="grid2">'+inp("nom","Nom")+inp("metier","Sous le nom","Scénariste & réalisateur")+inp("ville","Ville (pied de page)")+inp("email","E-mail (affiché seulement si coché dans Page contact)")+'</div>'+
+      '<label class="f">Phrase d\'accroche<input class="inp" name="accroche" value="'+esc(p.accroche)+'"></label>'+
+      '<label class="f">Présentation (une ligne vide entre deux paragraphes)<textarea class="inp" name="bio" rows="8">'+esc(p.bio)+'</textarea></label>'+
+      '<div class="grid2">'+inp("instagram","Lien Instagram","https://instagram.com/…")+inp("youtube","Lien YouTube","https://youtube.com/@…")+inp("vimeo","Lien Vimeo","https://vimeo.com/…")+'</div>'+
+      pickBlock("Portrait", p.portrait, "tall")+'<p class="note" style="margin:0">Les changements de cette page sont gardés au fur et à mesure. Cliquez sur Publier pour les mettre en ligne.</p></form>';
+    $("ed").addEventListener("input", function(e){ if(e.target.name && e.target.type!=="file"){ p[e.target.name]=e.target.value; markDirty(); } });
+    $("ed").addEventListener("submit", function(e){ e.preventDefault(); });
+    wirePick(p,"portrait");
+  }
+  function contactView(){
+    var c=D.contact;
+    $("panel").innerHTML='<form class="editor" id="ed" novalidate><h3>Page contact</h3>'+
+      '<label class="f">Titre<input class="inp" name="titre" value="'+esc(c.titre)+'"></label>'+
+      '<label class="f">Texte avant le formulaire (une ligne vide entre deux paragraphes)<textarea class="inp" name="texte" rows="7">'+esc(c.texte)+'</textarea></label>'+
+      '<label class="check"><input type="checkbox" name="afficherEmail"'+(c.afficherEmail?' checked':'')+'> Afficher aussi l\'adresse e-mail sous le texte</label>'+
+      '<p class="note" style="margin:0">L\'adresse e-mail et les liens des réseaux se modifient dans « Profil &amp; réseaux ». Les messages du formulaire arrivent par e-mail via Netlify.</p></form>';
+    $("ed").addEventListener("input", function(e){ if(e.target.name && e.target.type!=="checkbox"){ c[e.target.name]=e.target.value; markDirty(); } });
+    $("ed").addEventListener("change", function(e){ if(e.target.name==="afficherEmail"){ c.afficherEmail=e.target.checked; markDirty(); } });
+    $("ed").addEventListener("submit", function(e){ e.preventDefault(); });
+  }
+
+  $("publish").addEventListener("click", function(){ if(editing){ toast("Validez ou annulez d'abord l'élément en cours de modification."); return; } publish(); });
+
+  if (A.token && A.owner && A.repo) start(false); else showLogin();
+})();
+</script>
+</body>
+</html>

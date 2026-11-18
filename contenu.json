@@ -1,0 +1,199 @@
+{
+  "profil": {
+    "nom": "Thomas Aznar",
+    "metier": "Scénariste & réalisateur",
+    "ville": "Paris",
+    "email": "",
+    "accroche": "[Phrase d'accroche : qui il est, ce qu'il raconte.]",
+    "bio": "[Texte de présentation à fournir par Thomas : son parcours, sa formation de scénariste à l'École W, ce qui le pousse à filmer, ses influences.]\n\n[Deuxième paragraphe éventuel : ses collaborations, avec Victor Thévenin sur L'attente et avec Joe la panic pour ses clips.]",
+    "instagram": "",
+    "youtube": "",
+    "vimeo": "",
+    "portrait": ""
+  },
+  "contact": {
+    "titre": "Un projet, une collaboration ?",
+    "texte": "J'aime travailler sur des projets très différents : fiction, clip, documentaire, écriture. Je suis ouvert à toutes les opportunités.\n\nUne question, une idée, une envie de travailler ensemble ? Écrivez-moi via le formulaire, je vous réponds rapidement.",
+    "afficherEmail": false
+  },
+  "films": [
+    {
+      "id": "attente",
+      "titre": "L'attente",
+      "categorie": "court",
+      "annee": "2026",
+      "duree": "3 min 33",
+      "artiste": "",
+      "sousTitre": "coréalisé avec Victor Thévenin",
+      "synopsis": "Dans le village de Goudelin, depuis trois ans, un homme vient toquer à la porte des femmes âgées la nuit. Les autorités locales ne font pourtant rien pour le retrouver. Françoise, 78 ans, redoute toutes les nuits sa venue, et attend depuis longtemps que les autorités locales agissent.",
+      "video": "https://www.youtube.com/watch?v=kgeLqYdLcxo",
+      "image": "images/films/attente.jpg",
+      "mention": "Lauréat · Filme ton quartier 2026",
+      "credits": [
+        {
+          "role": "Réalisation",
+          "nom": "Thomas Aznar, Victor Thévenin"
+        }
+      ],
+      "publie": true
+    },
+    {
+      "id": "tudum",
+      "titre": "Tudum",
+      "categorie": "clip",
+      "annee": "2026",
+      "duree": "",
+      "artiste": "Joe la panic",
+      "sousTitre": "coréalisé avec Laura Bougeard",
+      "synopsis": "",
+      "video": "https://www.youtube.com/watch?v=-7YvT4u8i2c",
+      "image": "images/films/tudum.jpg",
+      "mention": "",
+      "credits": [
+        {
+          "role": "Artiste",
+          "nom": "Joe la panic"
+        },
+        {
+          "role": "Réalisation",
+          "nom": "Laura Bougeard, Thomas Aznar"
+        },
+        {
+          "role": "Montage",
+          "nom": "Joe la panic, Laura Bougeard"
+        },
+        {
+          "role": "Étalonnage",
+          "nom": "Laura Bougeard"
+        },
+        {
+          "role": "Musique",
+          "nom": "Tetsu, Joe la panic"
+        },
+        {
+          "role": "Production",
+          "nom": "Extension"
+        }
+      ],
+      "publie": true
+    },
+    {
+      "id": "creature-moyenne",
+      "titre": "Créature moyenne",
+      "categorie": "clip",
+      "annee": "2026",
+      "duree": "",
+      "artiste": "Joe la panic",
+      "sousTitre": "coréalisé avec Laura Bougeard",
+      "synopsis": "",
+      "video": "https://www.youtube.com/watch?v=vGUIX1hPqcQ",
+      "image": "images/films/creature-moyenne.jpg",
+      "mention": "",
+      "credits": [
+        {
+          "role": "Artiste",
+          "nom": "Joe la panic"
+        },
+        {
+          "role": "Réalisation",
+          "nom": "Laura Bougeard, Thomas Aznar"
+        },
+        {
+          "role": "Image",
+          "nom": "Laura Bougeard"
+        },
+        {
+          "role": "Lumière",
+          "nom": "Garance Audrain, Roman Collignon"
+        },
+        {
+          "role": "Montage",
+          "nom": "Thomas Aznar"
+        },
+        {
+          "role": "Étalonnage",
+          "nom": "Yanis Aarrouf"
+        },
+        {
+          "role": "Production",
+          "nom": "Extension"
+        }
+      ],
+      "publie": true
+    },
+    {
+      "id": "happy-hour",
+      "titre": "Happy Hour",
+      "categorie": "clip",
+      "annee": "2025",
+      "duree": "",
+      "artiste": "Joe la panic",
+      "sousTitre": "",
+      "synopsis": "",
+      "video": "https://www.youtube.com/watch?v=RKthlyyzVzY",
+      "image": "images/films/happy-hour.jpg",
+      "mention": "",
+      "credits": [
+        {
+          "role": "Artiste",
+          "nom": "Joe la panic"
+        },
+        {
+          "role": "Réalisation",
+          "nom": "Thomas Aznar"
+        },
+        {
+          "role": "Montage",
+          "nom": "Thomas Aznar"
+        },
+        {
+          "role": "Image & étalonnage",
+          "nom": "Laura Bougeard"
+        },
+        {
+          "role": "Musique",
+          "nom": "Tetsu, Joe la panic"
+        },
+        {
+          "role": "Production",
+          "nom": "Extension"
+        }
+      ],
+      "publie": true
+    }
+  ],
+  "prix": [
+    {
+      "id": "filme-ton-quartier",
+      "distinction": "Lauréat",
+      "annee": "2026",
+      "titre": "Filme ton quartier",
+      "detail": "France 3 · 10ᵉ édition",
+      "film": "L'attente",
+      "logo": ""
+    }
+  ],
+  "parcours": [
+    {
+      "id": "clips",
+      "periode": "2025 – 2026",
+      "titre": "Clips pour Joe la panic",
+      "detail": "Happy Hour (2025), Créature moyenne et Tudum (2026, avec Laura Bougeard)",
+      "logo": ""
+    },
+    {
+      "id": "attente",
+      "periode": "2026",
+      "titre": "L'attente",
+      "detail": "Court métrage · coréalisé avec Victor Thévenin · lauréat Filme ton quartier 2026",
+      "logo": ""
+    },
+    {
+      "id": "ecole-w",
+      "periode": "[Années]",
+      "titre": "École W",
+      "detail": "Formation scénariste",
+      "logo": ""
+    }
+  ]
+}
