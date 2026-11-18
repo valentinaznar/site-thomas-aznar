@@ -3,7 +3,7 @@
 // repo   : le nom du dépôt (ex. "site-thomas-aznar")
 // branch : la branche principale, en général "main"
 window.SITE_CONFIG = {
-  owner: "",
+  owner: "valentinaznar",
   repo: "site-thomas-aznar",
   branch: "main"
 };
