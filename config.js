@@ -7,5 +7,5 @@ window.SITE_CONFIG = {
   owner: "valentinaznar",
   repo: "site-thomas-aznar",
   branch: "main",
-  formulaire: ""
+  formulaire: "https://formspree.io/f/meagkbej"
 };
